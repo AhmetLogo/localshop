@@ -183,6 +183,8 @@ Standart response formatı:
 | `CUSTOMER` | ürünleri görüntüler/arar, sepet yönetir, sipariş oluşturur/görüntüler, ödeme yapar |
 | `SELLER` | kendi ürünlerini ekler/düzenler/siler, kendisine gelen siparişleri görüntüler ve SHIPPED/DELIVERED olarak günceller |
 
+Seller'a yalnızca ödemesi tamamlanmış siparişler (`PAID`, `SHIPPED`, `DELIVERED`) gösterilir; `PENDING_PAYMENT` durumundaki siparişler henüz bir taahhüt olmadığı için satıcı panelinde görünmez. Customer, `PENDING_PAYMENT` durumundaki bir siparişi Siparişlerim sayfasındaki "Ödemeyi Tamamla" butonuyla tekrar ödeme sayfasına dönüp tamamlayabilir.
+
 ## Fake Payment Cards
 
 | Kart Numarası | Sonuç |
@@ -197,7 +199,8 @@ Standart response formatı:
 - Rol bazlı yetkilendirme `roleMiddleware` (`authorize("SELLER")` / `authorize("CUSTOMER")`) ile uygulanır.
 - Resource ownership her zaman rol kontrolünün üzerine eklenir: seller yalnızca `product.sellerId === req.user.id` olan ürünleri, `order.sellerId === req.user.id` olan siparişleri değiştirebilir; customer yalnızca `order.customerId === req.user.id` olan siparişleri görebilir.
 - **Fiyat asla client'tan güvenilmez**: sepete ekleme ve sipariş oluşturma sırasında fiyat her zaman `Product` koleksiyonundan okunur; client'ın gönderdiği `price`/`totalPrice` alanları yok sayılır.
-- **Kart bilgileri** (`cardNumber`, `cardHolder`, `expiry`, `cvv`) hiçbir yerde saklanmaz, loglanmaz, response'da geri dönülmez ve `Order` modeline eklenmez — `paymentService` yalnızca bellek içinde son kart hanesini simülasyon için kontrol eder.
+- **Kart bilgileri** (`cardNumber`, `cardHolder`, `expiry`, `cvv`) hiçbir yerde saklanmaz, loglanmaz, response'da geri dönülmez ve `Order` modeline eklenmez — `paymentService` yalnızca bellek içinde kart numarasını simülasyon için kontrol eder.
+- Kart alanları hem frontend (`utils/cardValidation.js`) hem backend'de (`validators/paymentValidators.js`) aynı kurallarla doğrulanır: kart numarası tam 16 hane + **Luhn algoritması**, CVV tam 3 hane, son kullanma tarihi `AA/YY` formatında ve **süresi geçmemiş** olmalı. Backend doğrulaması esastır — frontend yalnızca UX içindir.
 - `JWT_SECRET` ve `MONGO_URI` yalnızca `.env` içinde tutulur, repoya commit edilmez (`.gitignore`).
 - `express-rate-limit` ile genel, auth ve payment endpoint'lerine ayrı limitler uygulanır.
 - `cors` yalnızca `CLIENT_ORIGIN` origin'ine izin verir; `helmet` ile güvenlik header'ları eklenir.
@@ -210,6 +213,7 @@ Standart response formatı:
 - Backend katmanları tek yönlü bağımlılık zinciri izler: `Route → Middleware → Controller → Service → Model`. Controller'lar ince tutulur, tüm iş kuralları `services/` içinde yaşar (test edilebilirlik ve SRP için).
 - **Order snapshot**: `Order.items` içindeki `productName` ve `unitPrice` sipariş anında kopyalanır; ürün sonradan değişse/silinse bile geçmiş siparişler etkilenmez.
 - **Multi-seller checkout**: sepet seller'a göre gruplanır ve her seller için ayrı `Order` dokümanı oluşturulur — böylece her seller yalnızca kendi siparişini yönetir.
+- **Seller sipariş görünürlüğü**: `PENDING_PAYMENT` siparişler henüz gerçek bir taahhüt olmadığından (`orderService.getSellerOrders`) satıcıya gösterilmez; yalnızca ödemesi başarılı olmuş siparişler satıcı panelinde görünür.
 - Sipariş oluşturma standalone MongoDB üzerinde (replica set gerektiren) multi-document transaction kullanmaz; bunun yerine stok, sipariş oluşturmadan hemen önce taze veriden tekrar doğrulanır. Production'da replica set + transaction önerilir.
 - Frontend'de component'ler API detaylarından izole edilmiştir (`services/*Api.js`); ek state management kütüphanesi kullanılmadan `useState`/`useEffect`/`Context API` ile MVP ihtiyacı karşılanmıştır.
 - Frontend route koruması (`ProtectedRoute`) yalnızca UX amaçlıdır; gerçek yetkilendirme her zaman backend'de zorunlu kılınır.
@@ -220,5 +224,7 @@ Standart response formatı:
 - Ürün görselleri desteklenmemektedir.
 - E-posta doğrulama / şifre sıfırlama akışları yoktur.
 - Sipariş oluşturma standalone MongoDB'de tam ACID garantisi vermez (yukarıda açıklandığı gibi).
+- Stok, ödeme başarılı olduğunda değil **sipariş oluşturulduğunda** düşürülür; müşteri ödemeyi hiç tamamlamazsa (`PENDING_PAYMENT` durumunda kalırsa) o stok serbest bırakılmaz. MVP kapsamında bir stok-serbest-bırakma/timeout mekanizması yoktur.
+- Checkout sırasında teslimat adresi alınmaz; Order modeli yalnızca ürün/fiyat/durum bilgisi tutar.
 - Otomatik test suite'i opsiyonel bırakılmıştır; doğrulama Postman collection'ı ve manuel/tarayıcı testleriyle yapılmıştır.
 - Sayfalama (`page`/`limit`) mevcuttur ancak frontend'de sonsuz kaydırma/manuel sayfa geçişi UI'ı eklenmemiştir.

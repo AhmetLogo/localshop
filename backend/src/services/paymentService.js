@@ -1,6 +1,7 @@
 const orderService = require("./orderService");
 
-const FAILING_TEST_CARD = "4000000000000000";
+// Luhn-valid decline test card (matches the widely used FakePay/Stripe convention).
+const FAILING_TEST_CARD = "4000000000000002";
 
 /**
  * Simulated payment gateway. Card details are used only in-memory for this

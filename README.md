@@ -188,7 +188,7 @@ Standart response formatı:
 | Kart Numarası | Sonuç |
 |---|---|
 | `4242424242424242` | Başarılı ödeme → sipariş `PAID` |
-| `4000000000000000` | Başarısız ödeme → sipariş `PAYMENT_FAILED` |
+| `4000000000000002` | Başarısız ödeme → sipariş `PAYMENT_FAILED` |
 
 ## Security Decisions
 

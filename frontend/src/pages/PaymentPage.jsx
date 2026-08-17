@@ -97,7 +97,7 @@ export default function PaymentPage() {
       <h1>Ödeme (FakePay)</h1>
       <p className="hint">
         Başarılı ödeme için <code>4242 4242 4242 4242</code>, başarısız ödeme simülasyonu için{" "}
-        <code>4000 0000 0000 0000</code> kullanabilirsiniz.
+        <code>4000 0000 0000 0002</code> kullanabilirsiniz.
       </p>
 
       <div className="payment-layout">

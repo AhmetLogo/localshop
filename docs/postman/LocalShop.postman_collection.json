@@ -7,6 +7,7 @@
     { "key": "baseUrl", "value": "http://localhost:5050/api" },
     { "key": "customerToken", "value": "" },
     { "key": "sellerToken", "value": "" },
+    { "key": "otherSellerToken", "value": "" },
     { "key": "productId", "value": "" },
     { "key": "orderId", "value": "" }
   ],
@@ -34,6 +35,18 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Seller One\",\n  \"email\": \"seller1@test.com\",\n  \"password\": \"password123\",\n  \"role\": \"SELLER\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Register Another Seller (for Wrong Owner tests)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Seller Two\",\n  \"email\": \"seller2@test.com\",\n  \"password\": \"password123\",\n  \"role\": \"SELLER\"\n}"
             },
             "url": "{{baseUrl}}/auth/register"
           }
@@ -129,12 +142,36 @@
           }
         },
         {
+          "name": "Update - Invalid Token (401)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer this.is.not.a.valid.jwt" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 55\n}" },
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        },
+        {
           "name": "Update - Wrong Role / Customer Token (403)",
           "request": {
             "method": "PATCH",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 55\n}" },
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Update - Wrong Owner / Other Seller (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{otherSellerToken}}" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"price\": 55\n}" },
             "url": "{{baseUrl}}/products/{{productId}}"
@@ -244,6 +281,18 @@
             "body": { "mode": "raw", "raw": "{\n  \"status\": \"SHIPPED\"\n}" },
             "url": "{{baseUrl}}/seller/orders/{{orderId}}/status"
           }
+        },
+        {
+          "name": "Seller Update Status - Wrong Owner / Other Seller (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{otherSellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"SHIPPED\"\n}" },
+            "url": "{{baseUrl}}/seller/orders/{{orderId}}/status"
+          }
         }
       ]
     },
@@ -275,7 +324,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"cardNumber\": \"4000000000000000\",\n  \"cardHolder\": \"Customer One\",\n  \"expiry\": \"12/30\",\n  \"cvv\": \"123\"\n}"
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"cardNumber\": \"4000000000000002\",\n  \"cardHolder\": \"Customer One\",\n  \"expiry\": \"12/30\",\n  \"cvv\": \"123\"\n}"
             },
             "url": "{{baseUrl}}/payments/pay"
           }
